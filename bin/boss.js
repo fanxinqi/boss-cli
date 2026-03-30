@@ -5,13 +5,14 @@ import chalk from 'chalk';
 import { login, loginWithCookie, logout, isLoggedIn } from '../lib/auth.js';
 import { listMessages, chatHistory } from '../lib/messages.js';
 import { listJobs, listResumes } from '../lib/resume.js';
+import { recommendJobs, searchJobs, jobDetail, geekMessages } from '../lib/geek.js';
 import { cleanup } from '../lib/api.js';
 
 const program = new Command();
 
 program
   .name('boss')
-  .description('BOSS直聘 B端 CLI 工具 (Puppeteer 无头浏览器)')
+  .description('BOSS直聘 CLI 工具 — 支持 B端(招聘) + C端(求职)')
   .version('1.0.0');
 
 // ---- Login ----
@@ -98,6 +99,70 @@ program
       await listResumes({ jobId: opts.job, page: parseInt(opts.page) });
     } catch (err) {
       console.error(chalk.red(`获取简历失败: ${err.message}`));
+    } finally {
+      await cleanup();
+    }
+  });
+
+// ===== C端 (求职者) =====
+
+// ---- 推荐职位 ----
+program
+  .command('geek-jobs')
+  .description('[C端] 查看推荐职位')
+  .option('-p, --page <page>', '页码', '1')
+  .action(async (opts) => {
+    try {
+      await recommendJobs({ page: parseInt(opts.page) });
+    } catch (err) {
+      console.error(chalk.red(`获取推荐职位失败: ${err.message}`));
+    } finally {
+      await cleanup();
+    }
+  });
+
+// ---- 搜索职位 ----
+program
+  .command('search-jobs')
+  .description('[C端] 搜索职位')
+  .requiredOption('-q, --query <keyword>', '搜索关键词')
+  .option('-c, --city <cityCode>', '城市代码 (如 101010100=北京)')
+  .option('-p, --page <page>', '页码', '1')
+  .action(async (opts) => {
+    try {
+      await searchJobs({ query: opts.query, city: opts.city, page: parseInt(opts.page) });
+    } catch (err) {
+      console.error(chalk.red(`搜索职位失败: ${err.message}`));
+    } finally {
+      await cleanup();
+    }
+  });
+
+// ---- 职位详情 ----
+program
+  .command('job-detail')
+  .description('[C端] 查看职位详情')
+  .requiredOption('--id <securityId>', '职位 securityId')
+  .action(async (opts) => {
+    try {
+      await jobDetail({ securityId: opts.id });
+    } catch (err) {
+      console.error(chalk.red(`获取职位详情失败: ${err.message}`));
+    } finally {
+      await cleanup();
+    }
+  });
+
+// ---- C端消息 ----
+program
+  .command('geek-messages')
+  .description('[C端] 查看求职者消息列表')
+  .option('-p, --page <page>', '页码', '1')
+  .action(async (opts) => {
+    try {
+      await geekMessages({ page: parseInt(opts.page) });
+    } catch (err) {
+      console.error(chalk.red(`获取消息失败: ${err.message}`));
     } finally {
       await cleanup();
     }
